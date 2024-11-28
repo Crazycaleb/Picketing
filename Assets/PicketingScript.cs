@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,8 +16,11 @@ public class PicketingScript : MonoBehaviour
     public KMSelectable[] Buttons;
 
     public GameObject[] ButtonColors;
+    public GameObject[] Stations;
 
     public Material Green;
+    public Material Yellow;
+    public Material Red;
 
     public Material[] PaintColors;
 
@@ -27,8 +30,13 @@ public class PicketingScript : MonoBehaviour
     private static int _moduleIdCounter = 1;
     private bool _moduleSolved;
 
+    public Material PaintAnswer;
 
-    
+    private Dictionary<string, Material> colorDictionary;
+    public string[] ColorNames;
+
+
+
     int buttonCounter = 0;
 
     private void Start()
@@ -39,7 +47,34 @@ public class PicketingScript : MonoBehaviour
         {
             Button.OnInteract += delegate () { ButtonPress(Button); return false; };
         }
+        /*foreach (KMSelectable Can in PaintCans){
+            Can.OnInteract += delegate () { CanPress(Can); return false; };
+        }*/
+
+
+        colorDictionary = new Dictionary<string, Material>();
+        for (int i = 0; i < PaintColors.Length; i++)
+        {
+            if (i < ColorNames.Length)
+            {
+                colorDictionary[ColorNames[i]] = PaintColors[i];
+            }
+        }
+
         GenerateMod();
+    }
+
+    public void AssignColor(string colorName)
+    {
+        Material material;
+        if (colorDictionary.TryGetValue(colorName, out material)) // Explicitly declare 'material' outside 'out'
+        {
+            PaintAnswer = material;
+        }
+        else
+        {
+            Debug.LogWarning("Color '" + colorName + "' not found in the dictionary."); // Use string concatenation
+        }
     }
 
     void GenerateMod(){
@@ -55,7 +90,79 @@ public class PicketingScript : MonoBehaviour
             return;
         }
 
+        if (Button == Buttons[0]){
+            /* Writing Station */
+            Stations[0].SetActive(true);
+            Stations[1].SetActive(false);
+            Stations[2].SetActive(false);
+            var renderer = ButtonColors[0].GetComponent<MeshRenderer>();
+            var mats = renderer.materials;
+            mats[1] = Yellow;
+            renderer.materials = mats;
+
+
+            /* resetting the other buttons colors*/
+            var renderer2 = ButtonColors[1].GetComponent<MeshRenderer>();
+            var mats2 = renderer2.materials;
+            mats2[1] = Red;
+            renderer2.materials = mats2;
+
+            var renderer3 = ButtonColors[2].GetComponent<MeshRenderer>();
+            var mats3 = renderer3.materials;
+            mats3[1] = Red;
+            renderer3.materials = mats3;
+        }
+
+        else if (Button == Buttons[1])
+        {
+            /* Designing Station */
+            Stations[0].SetActive(false);
+            Stations[1].SetActive(true);
+            Stations[2].SetActive(false);
+            var renderer = ButtonColors[1].GetComponent<MeshRenderer>();
+            var mats = renderer.materials;
+            mats[1] = Yellow;
+            renderer.materials = mats;
+
+
+            /* resetting the other buttons colors*/
+            var renderer2 = ButtonColors[0].GetComponent<MeshRenderer>();
+            var mats2 = renderer2.materials;
+            mats2[1] = Red;
+            renderer2.materials = mats2;
+
+            var renderer3 = ButtonColors[2].GetComponent<MeshRenderer>();
+            var mats3 = renderer3.materials;
+            mats3[1] = Red;
+            renderer3.materials = mats3;
+        }
+
+        else if (Button == Buttons[2])
+        {
+            /* Painting Station */
+            Stations[0].SetActive(false);
+            Stations[1].SetActive(false);
+            Stations[2].SetActive(true);
+            var renderer = ButtonColors[2].GetComponent<MeshRenderer>();
+            var mats = renderer.materials;
+            mats[1] = Yellow;
+            renderer.materials = mats;
+
+            /* resetting the other buttons colors*/
+            var renderer2 = ButtonColors[0].GetComponent<MeshRenderer>();
+            var mats2 = renderer2.materials;
+            mats2[1] = Red;
+            renderer2.materials = mats2;
+
+            var renderer3 = ButtonColors[1].GetComponent<MeshRenderer>();
+            var mats3 = renderer3.materials;
+            mats3[1] = Red;
+            renderer3.materials = mats3;
+
+        }
+
         if (Button == Buttons[3]){
+            /* BOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOST Station */
             buttonCounter++;
             Debug.LogFormat("Pressed button {0} times.", buttonCounter);
             if (buttonCounter >= boostNumber){
@@ -71,22 +178,36 @@ public class PicketingScript : MonoBehaviour
         }
     }
 
-    /*void PaintingStation(){
-        switch(BombInfo.GetBatteryCount())
-
-        case 0: if (BombInfo.GetPortCount(Port.PS2) > BombInfo.GetUnlitIndicators()){
-            if (BombInfo.IsPortPresent(Port.RJ45)){
-                return string tan;
-            }
-            else {
-                return string teal;
-            }
-        }        
-        else if (BombInfo.IsIndicatorOff()){
-            return string gray;
+    /*void CanPress(KMSelectable Can){
+        Button.AddInteractionPunch(0.5f);
+        Audio.PlayGameSoundAtTransform(KMSoundOverride.SoundEffect.ButtonPress, transform);
+        if (_moduleSolved)
+        {
+            return;
         }
+        if (Stations[2] != true){
+            return;
+        }
+
+
+    }*/
+
+    void PaintingStation(){
+        switch(BombInfo.GetBatteryCount()){
+        case 0: 
+            if (BombInfo.GetPortCount(Port.PS2) > BombInfo.GetOffIndicators().Count()){
+                if (BombInfo.IsPortPresent(Port.RJ45)){
+                     AssignColor("Beige");
+                }
             else {
-            return string red;
+                AssignColor("Teal");
+            }
+            }        
+            else if (BombInfo.GetOffIndicators().Count() >= 1){
+                AssignColor("Grey");
+            }
+                else {
+                AssignColor("Red");
             }
         break;
 
@@ -95,59 +216,63 @@ public class PicketingScript : MonoBehaviour
             {
                 if (BombInfo.GetPortCount(Port.Parallel) > BombInfo.GetPortCount(Port.DVI))
                 {
-                    return string yellow;
+                    AssignColor("Yellow");
                 }
                 else
                 {
-                    return string indigo;
+                    AssignColor("Indigo");
                 }
             }
-            else if (BombInfo.GetPortCount(Port.Serial) > BombInfo.GetLitIndicators())
+            else if (BombInfo.GetPortCount(Port.Serial) > BombInfo.GetOnIndicators().Count())
             {
-                return string blue;
+                AssignColor("Blue");
             }
             else
             {
-                return string purple;
+                AssignColor("Purple");
             }
             break;
 
         case 2:
-            if (BombInfo.IsIndicatorOn())
+            if (BombInfo.GetOnIndicators().Count() >= 1)
             {
-                if (BombInfo.GetBatteryCount(KMBombInfoExtensions.KnownBatteryType.AA) > BombInfo.GetBatteryCount(KMBombInfoExtensions.KnownBatteryType.D))
+                if (BombInfo.GetBatteryCount(Battery.AA) > BombInfo.GetBatteryCount(Battery.D))
                 {
-                    return string cyan;
+                    AssignColor("Cyan");
                 }
                 else
                 {
-                    return string black;
+                    AssignColor("Black");
                 }
             }
             else if (BombInfo.GetPortCount(Port.PS2) + BombInfo.GetPortCount(Port.Serial) >= 2)
             {
-                return string orange;
+                AssignColor("Orange");
             }
             else
             {
-                return string lavender;
+                AssignColor("Lavender");
             }
             break;
 
-        default: if (BombInfo.GetPortCount(Port.RCA) > BombInfo.GetPortCount(Port.RJ45)){
-            if (BombInfo.GetIndicators() < 3){
-                return string gold;
+        default: 
+        if (BombInfo.GetPortCount(Port.StereoRCA) > BombInfo.GetPortCount(Port.RJ45)){
+            if (BombInfo.GetIndicators().Count() < 3){
+                AssignColor("Gold");
             }
-            else (){
-                return string magenta;
+            else{
+                AssignColor("Magenta");
             }
         }
         else if (BombInfo.IsPortPresent(Port.Serial)){
-            return string brown;
+                AssignColor("Brown");
         }
         else {
-            return string green;
+                AssignColor("Green");
         }
         break;
-    }*/
+        }
+
+
+    }
 }
